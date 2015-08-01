@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:twitter="http://www.mulesoft.org/schema/mule/twitter" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/twitter http://www.mulesoft.org/schema/mule/twitter/current/mule-twitter.xsd" version="CE-3.5.0">
+    <apikit:config name="api-config" raml="api.raml" consoleEnabled="true" consolePath="console" doc:name="Router"/>
+    <sfdc:config name="Salesforce__Basic_authentication" username="${sf_username}" password="${sf_password}" securityToken="${sf_security_token}" doc:name="Salesforce: Basic authentication"/>
+    <db:mysql-config name="MySQL_Configuration" host="${ms_server}" port="${ms_port}" user="${ms_user}" database="${ms_database}" doc:name="MySQL Configuration"/>
+    <twitter:config name="Twitter__Config" accessKey="${tw_access_key}" accessSecret="${tw_access_secret}" consumerKey="${tw_consumer_key}" consumerSecret="${tw_consumer_secret}" doc:name="Twitter"/>
+    <apikit:mapping-exception-strategy name="api-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+    <flow name="api-main">
+        <http:inbound-endpoint address="http://localhost:8081/api" doc:name="HTTP"/>
+        <apikit:router config-ref="api-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="put:/users:api-config">
+        <set-payload value="{&#xA;  &quot;data&quot;: {&#xA;    &quot;firstName&quot;: &quot;Jose&quot;,&#xA;    &quot;lastName&quot;: &quot;Betanzos&quot;,&#xA;    &quot;twitterAccount&quot;: &quot;@josebetanzos&quot;&#xA;  },&#xA;  &quot;success&quot;: true&#xA;}" doc:name="Set Payload"/>
+    </flow>
+    <flow name="delete:/users:api-config">
+        <set-payload value="{&#xA;  &quot;success&quot;: true&#xA;}" doc:name="Set Payload"/>
+    </flow>
+    <flow name="get:/users:api-config">
+        <set-payload value="{&#xA;  &quot;accountId&quot;: &quot;892389JIO&quot;,&#xA;  &quot;email&quot;:&quot;jose@betanzos.io&quot;,&#xA;  &quot;firstName&quot;: &quot;Jose&quot;,&#xA;  &quot;lastName&quot;: &quot;Betanzos&quot;,&#xA;  &quot;twitterAccount&quot;: &quot;@josebetanzos&quot;&#xA;}" doc:name="Set Payload"/>
+    </flow>
+    <flow name="get:/reports/{reportName}:api-config">
+        <logger message="#[reportName]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Choice">
+            <when expression="#[reportName == 'totalcases']">
+                <sfdc:query config-ref="Salesforce__Basic_authentication" query="dsql:SELECT AccountId,CreatedDate,IsClosed,OwnerId,Subject FROM Case ORDER BY CreatedDate DESC LIMIT 10" doc:name="Total Cases"/>
+            </when>
+            <when expression="#[reportName == 'totalsolved']">
+                <sfdc:query config-ref="Salesforce__Basic_authentication" query="dsql:SELECT COUNT(Id) FROM Case WHERE IsClosed = true" doc:name="Total Solved"/>
+                <logger message="#[payload.next().expr0]" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <sfdc:query config-ref="Salesforce__Basic_authentication" query="dsql:SELECT FirstName, LastName, Email, CreatedDate FROM Contact WHERE AccountId = NULL ORDER BY CreatedDate DESC LIMIT 5" doc:name="Users whitout account"/>
+            </otherwise>
+        </choice>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+    </flow>
+    <flow name="post:/users:api-config">
+        <set-payload value="{&#xA;  &quot;data&quot;: {&#xA;    &quot;accountId&quot;: &quot;892389JIO&quot;,&#xA;    &quot;email&quot;: &quot;jose@betanzos.io&quot;,&#xA;    &quot;firstName&quot;: &quot;Jose&quot;,&#xA;    &quot;lastName&quot;: &quot;Betanzos&quot;,&#xA;    &quot;twitterAccount&quot;: &quot;@josebetanzos&quot;&#xA;  },&#xA;  &quot;success&quot;: true&#xA;}" doc:name="Set Payload"/>
+    </flow>
+    <flow name="post:/twitter:api-config">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT twitter FROM employees WHERE email LIKE 'jose@betanzos.io']]></db:parameterized-query>
+        </db:select>
+        <set-payload value="#[payload.get(0).twitter]" doc:name="Set Payload"/>
+        <component doc:name="Java" class="lyris.core.WsTwitter">
+        	<binding interface="lyris.sf.LyrisSFInterface">
+       			<vm:outbound-endpoint exchange-pattern="request-response" path="sf.total.closed.cases" />
+       		</binding>
+        </component>
+        <twitter:update-status config-ref="Twitter__Config"      doc:name="Twitter" status="#[payload]"/>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="SFTotalClosedCases">
+        <vm:inbound-endpoint exchange-pattern="request-response" path="sf.total.closed.cases" doc:name="VM"/>
+        <sfdc:query config-ref="Salesforce__Basic_authentication" query="SELECT COUNT(Id) FROM Case WHERE IsClosed = true" doc:name="Total Closed"/>
+        <set-payload value="#[payload.next().expr0]" doc:name="Set Payload"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

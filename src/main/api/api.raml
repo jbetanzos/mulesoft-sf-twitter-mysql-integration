@@ -1,0 +1,112 @@
+#%RAML 0.8
+title: LyrisExample
+baseUri: http://mocksvc.mulesoft.com/mocks/7ad24a13-4872-46f2-ae50-82f06930c263/{version}
+version: 1.0
+
+/reports:
+  /{reportName}:
+    get:
+      description: Enter the name of the report in a camel case format
+      responses:
+        200:
+          body:
+            application/json:
+              example: |
+                [
+                  {
+                    "Owner": "Jose Betanzos",
+                    "Account Name": "GenePoint",
+                    "Subject": "Maintenance guidelines for generator unclear",
+                    "DateTime": "26/07/2015 13:42",
+                    "Open": true
+                  }, 
+                  {
+                    "Owner": "Jose Betanzos",
+                    "Account Name": "United Oil & Gas Corp.",
+                    "Subject": "Design issue with mechanical rotor",
+                    "DateTime": "26/07/2015 13:42",
+                    "Open": true
+                  },
+                  {
+                    "Owner": "Jose Betanzos",
+                    "Account Name": "University of Arizona",
+                    "Subject": "Repeated motor breakdown while shutting off",
+                    "DateTime": "26/07/2015 13:42",
+                    "Open": false
+                  }
+                ]
+/users:
+  get:
+    queryParameters:
+      email:
+        displayName: User's email
+        type: string
+        description: Email address of the client you want the information
+        example: jose@betanzos.io
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "accountId": "892389JIO",
+                "email":"jose@betanzos.io",
+                "firstName": "Jose",
+                "lastName": "Betanzos",
+                "twitterAccount": "@josebetanzos"
+              }
+  post:
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "data": {
+                  "accountId": "892389JIO",
+                  "email": "jose@betanzos.io",
+                  "firstName": "Jose",
+                  "lastName": "Betanzos",
+                  "twitterAccount": "@josebetanzos"
+                },
+                "success": true
+              }
+  put:
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "data": {
+                  "firstName": "Jose",
+                  "lastName": "Betanzos",
+                  "twitterAccount": "@josebetanzos"
+                },
+                "success": true
+              }
+  delete:
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "success": true
+              }
+      
+/twitter:
+  post:
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "data": {
+                  "tweeted": "We have 89 open cases and 100 solved"
+                },
+                "success": true
+              }
+        
